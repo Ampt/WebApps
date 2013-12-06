@@ -14,6 +14,7 @@ public class ClientServicer implements Runnable {
 	private final static int FAIL = -1;
 
 	private Socket clientSocket;
+	private String requestedFile;
 	
 	public ClientServicer(Socket clientSocket) {
 		this.clientSocket = clientSocket;
@@ -58,6 +59,18 @@ public class ClientServicer implements Runnable {
 				//The single CRLF would NOT signify EOT in an HTTP POST request.
 				//See http://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5
 				System.out.println( "   " + input );
+				if(input.startsWith("GET")){
+					String[] pieces = input.split(" ");
+					File f = new File("webapps", pieces[1]);
+					if(f.exists()){
+						requestedFile = pieces[1];
+						System.out.println("They wanted this file: " + requestedFile);
+					} else {
+						requestedFile =  "/404.html";
+						System.out.println("They wanted this file: " + requestedFile);
+					}
+					
+				}
 			}
 		} catch (NoSuchElementException e ) {
 			System.err.println("Error receiving client request. Continuing.");
@@ -117,7 +130,7 @@ public class ClientServicer implements Runnable {
 		pw.println(""); // required CRLF; see section 6
 
 		// Now use a helper method to send the HTML payload from the specified html file.
-		sendFile(pw, "webapps/response.html"); // TODO: return the resource actually requested
+		sendFile(pw, new File("webapps/response.html")); // TODO: return the resource actually requested
 
 		// We're done; shut down the stream and scram.
 		pw.close();
@@ -141,7 +154,7 @@ public class ClientServicer implements Runnable {
 		pw.println(""); // required CRLF; see section 6
 
 		// Now use a helper method to send the HTML payload from the specified html file.
-		sendFile(pw, "webapps/404.html"); // TODO: return the resource actually requested
+		sendFile(pw, new File("webapps/404.html")); // TODO: return the resource actually requested
 
 		// We're done; shut down the stream and scram.
 		pw.close();
@@ -150,22 +163,21 @@ public class ClientServicer implements Runnable {
 
 	/** Send the contents of the specified file to the client
 	 * 
-	 * @param pw PrintWriter stream writer to use to send character data
-	 * @param fileName file whose contents are to be sent
+	 * @param pw - PrintWriter stream writer to use to send character data
+	 * @param file - file whose contents are to be sent
 	 */
-	private void sendFile(PrintWriter pw, String fileName ) {
+	private void sendFile(PrintWriter pw, File file) {
 		// Setup a Scanner to read the specified file
 		try {
-			File f = new File( fileName );
-			Scanner reader = new Scanner(f);
-			while( reader.hasNextLine() ) { // keep reading as long as there's something to read
+			Scanner reader = new Scanner(file);
+			while(reader.hasNextLine()) { // keep reading as long as there's something to read
 
 				String record = reader.nextLine(); // read a record from the file...
-				pw.println( record ); // ...and write it to the client
+				pw.println(record); // ...and write it to the client
 				//				System.out.println( record );
 			}
 			reader.close();
-		} catch( IOException e ) { 
+		} catch(IOException e) { 
 			System.err.println("File access error. no file sent."); // alt: write message to error log.
 		}
 	}
