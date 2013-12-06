@@ -2,6 +2,8 @@ package server;
 
 import static org.junit.Assert.*;
 
+import java.net.Socket;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,13 +23,9 @@ public class ServerAppTest {
 	}
 
 	@Test
-	public void testInit(){
-		
-	}
-	
-	@Test
 	public void testReceiveRequest() {
-		fail("Not yet implemented");
+		
+		
 	}
 	
 	@Test

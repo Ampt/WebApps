@@ -25,13 +25,11 @@ public class ClientServicer implements Runnable {
 		// Once we've received the request, send a response.
 		if( status == SUCCESS )
 			sendResponse( clientSocket );
-
 		try {
 			clientSocket.close();
 		} catch (IOException e) {
 			System.err.println("IO Exception closing client socket. Continuing." );
 		}
-		
 	}
 	
 	/**
@@ -67,7 +65,7 @@ public class ClientServicer implements Runnable {
 
 		if( client.isClosed() ) {
 			System.out.println("Client closed connection early.");
-		} 
+		}
 
 		// Done receiving from the client.
 		System.out.println("Client request received/complete.");
@@ -125,6 +123,30 @@ public class ClientServicer implements Runnable {
 		pw.close();
 		return SUCCESS;
 	}
+	
+	private int send404Response(Socket client) {
+		PrintWriter pw = null;
+		// Setup a PrintWriter to write to the client
+		try {
+			pw = new PrintWriter(client.getOutputStream(), true); // open the output stream to the client; autoflush
+		} catch( IOException e ) {
+			System.err.println("Can't create client input stream");
+			return FAIL;
+		}
+
+		// Write an HTTP header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html#sec6
+		pw.println("HTTP/1.1 404 NOT FOUND");  // status line; see section 6.1 // TODO: change status based on whether requested resource actually exists
+		pw.println("Date: Tue, 15 Jun 2011 08:12:31 GMT"); // general header; see section 4.5 // TODO: Make dynamic
+		pw.println("Content-Type: text/html"); // entity header; see section 7.1 // TODO: change Content-Type based on actual content being returned
+		pw.println(""); // required CRLF; see section 6
+
+		// Now use a helper method to send the HTML payload from the specified html file.
+		sendFile(pw, "webapps/404.html"); // TODO: return the resource actually requested
+
+		// We're done; shut down the stream and scram.
+		pw.close();
+		return SUCCESS;
+	}
 
 	/** Send the contents of the specified file to the client
 	 * 
@@ -142,6 +164,7 @@ public class ClientServicer implements Runnable {
 				pw.println( record ); // ...and write it to the client
 				//				System.out.println( record );
 			}
+			reader.close();
 		} catch( IOException e ) { 
 			System.err.println("File access error. no file sent."); // alt: write message to error log.
 		}
