@@ -56,6 +56,7 @@ public class ServerApp {
 		threadPool = Executors.newFixedThreadPool(numberOfThreads);
 		try {
 			while(true){
+				System.out.println("Waiting on a connection...");
 				threadPool.execute(new ClientServicer(serverSocket.accept()));
 			}
 		} catch (IOException ex){

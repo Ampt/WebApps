@@ -1,54 +1,45 @@
 package server;
 
-import java.net.URL;
+import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.reflections.Reflections;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
-import webfiles.*;
+import webfiles.HTMLPage;
 
 public class WebFileFactory {
-	
-	Map<String, Class<? extends WebFile>> webFiles;
-	
-	public WebFileFactory(){
-		webFiles = getWebFileClasses();
+	private static Map<String, Class<? extends WebFile>> knownTypes;
+
+	static {
+		Reflections reflections = new Reflections("webfiles");
+		Set<Class<? extends WebFile>> subtypes = reflections.getSubTypesOf(WebFile.class);
+		knownTypes = new HashMap<String, Class<? extends WebFile>>();
+		for(Class<? extends WebFile> possibleMatch : subtypes) {
+			if(possibleMatch.isAnnotationPresent(Types.class)) {
+				Types t = (Types) possibleMatch.getAnnotation(Types.class);
+				for(String fileExt : t.knownTypes()) {
+					knownTypes.put(fileExt, possibleMatch);
+				}
+			}
+		}
 	}
 
-	private static Map<String, Class<? extends WebFile>> getWebFileClasses(){
-	    Set<URL> urls = ClasspathHelper.forPackage("webfiles");
-	    
-	    Reflections reflections = new Reflections("webfiles");
-
-	    Set<Class<? extends WebFile>> subTypes = reflections.getSubTypesOf(WebFile.class);
-	    
-	    Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Types.class);
-	    
-	    System.out.println("Here are the annotated classes:");
-	    for(Class<?> annotatedClass : annotated){
-	    	System.out.println(annotatedClass);
-	    	annotatedClass.getDeclaredAnnotations();
-	    }
-	    		
-	    Map<String, Class<? extends WebFile>> webFiles = new HashMap<String, Class<? extends WebFile>>(); 
-	    
-	    for(Class<? extends WebFile> possibleMatch : subTypes){
-	    	System.out.println(possibleMatch);
-	    	if (annotated.contains(possibleMatch)){
-	    		String[] acceptedFiles = possibleMatch.getAnnotation(Types.class).knownTypes();
-	    		for(String s: acceptedFiles){
-	    			webFiles.put(s, possibleMatch);
-	    		}
-	    	}
-	    }
-	    
-	    return webFiles;
+	public static WebFile getFile(File fileToDisplay) {
+		String fileName = fileToDisplay.getName();
+		String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+		if(knownTypes.containsKey(extension)) {
+			try {
+				return knownTypes.get(extension).getDeclaredConstructor(File.class).newInstance(fileToDisplay);
+			} catch (Exception e) {
+				// 404em!
+				return new HTMLPage(new File("webapps/404.html"));
+			}
+		}
+		System.err.println("We don't support the following filetype: " + fileName);
+		return new HTMLPage(new File("webapps/404.html"));
 	}
-	
 }

@@ -1,17 +1,13 @@
 package server;
 
 import java.io.File;
-import java.util.List;
+import java.net.Socket;
 
 public interface WebFile {
-	
-	public WebFile createWebFile(File f);
-	
-	public List<String> getFileTypes();
 
 	public String getStatusLine();
 	
 	public String getEntityHeader();
 	
-	public File getFile();
+	public void sendResource(Socket s);
 }
